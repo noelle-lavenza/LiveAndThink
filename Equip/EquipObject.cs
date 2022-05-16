@@ -20,6 +20,14 @@ namespace LiveAndThink.Disarm
 			targetObject = GO;
 		}
 
+		public override void Create()
+		{
+			if (!ParentObject.IsMobile() || ParentObject.Stat("Intelligence") < 7)
+			{
+				Pop();
+			}
+		}
+
 		public override bool CanFight()
 		{
 			return false;
