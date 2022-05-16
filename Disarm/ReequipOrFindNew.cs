@@ -16,13 +16,21 @@ namespace LiveAndThink.Disarm
 
 		public ReequipOrFindNew(GameObject GO) : base(GO)
 		{
-			if (GO.HasPart("MissileWeapon"))
+			if (GO.HasPart("MissileWeapon") && Brain.PreciseMissileWeaponScore(GO) > 0.0)
 			{
 				lostPart = "MissileWeapon";
 			}
-			else if (GO.HasPart("MeleeWeapon"))
+			else if (GO.HasPart("MeleeWeapon") && Brain.PreciseWeaponScore(GO) > 0.0)
 			{
 				lostPart = "MeleeWeapon";
+			}
+			else if (GO.HasPart("Armor") && Brain.PreciseArmorScore(GO) > 0.0)
+			{
+				lostPart = "Armor";
+			}
+			else if (GO.HasPart("Shield") && Brain.PreciseShieldScore(GO) > 0.0)
+			{
+				lostPart = "Shield";
 			}
 		}
 
@@ -32,7 +40,10 @@ namespace LiveAndThink.Disarm
 		/// </summary>
 		protected override void OnFail()
 		{
-			ParentBrain.PushGoal(new SearchForWeapon(lostPart));
+			if (!lostPart.IsNullOrEmpty())
+			{
+				ParentBrain.PushGoal(new SearchForWeapon(lostPart));
+			}
 		}
 	}
 }
