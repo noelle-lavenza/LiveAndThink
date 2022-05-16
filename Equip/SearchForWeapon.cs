@@ -19,28 +19,41 @@ namespace LiveAndThink.Equip
 			searchPart = _searchPart;
 		}
 
+		public override bool CanFight()
+		{
+			return false;
+		}
+
+		public override bool Finished()
+		{
+			return false;
+		}
+
 		public override void TakeAction()
 		{
 			Think("I'm going to find a new weapon!");
-			int searchRadius = XRL.Rules.Stat.Random(ParentBrain.MinKillRadius, ParentBrain.MaxKillRadius);
-			List<GameObject> newWeapons = ParentObject.CurrentZone.FastFloodVisibility(ParentObject.CurrentCell.X, ParentObject.CurrentCell.Y, searchRadius, searchPart, ParentObject);
-			if (newWeapons.Count() <= 0)
-			{
-				ParentBrain.DoReequip = true;
-				return;
-			}
+			// First, find the score of our best weapon with searchPart.
 			Func<GameObject, double> scorerPredicate = delegate(GameObject GO) {return Brain.PreciseWeaponScore(GO, ParentObject);};
+			List<GameObject> invWeapons = ParentObject.Inventory.GetObjects(GO => GO.HasPart(searchPart));
+			double maxScore = 0.0;
 			if (searchPart == "MissileWeapon")
 			{
 				scorerPredicate = delegate(GameObject GO) {return Brain.PreciseMissileWeaponScore(GO, ParentObject);};
 			}
-			List<GameObject> equipCandidates = newWeapons.Where(GO => GO.CurrentCell != null && GO.IsTakeable() && CurrentCell.PathDistanceTo(GO.CurrentCell.location) <= searchRadius && scorerPredicate(GO) > 0.0).OrderByDescending(scorerPredicate).ToList();
+			if (invWeapons.Count() > 0)
+			{
+				maxScore = invWeapons.Max(GO => scorerPredicate(GO));
+			}
+
+			int searchRadius = XRL.Rules.Stat.Random(ParentBrain.MinKillRadius, ParentBrain.MaxKillRadius);
+			List<GameObject> equipCandidates = CurrentZone.FastFloodVisibility(CurrentCell.X, CurrentCell.Y, searchRadius, searchPart, ParentObject).Where(GO => GO.CurrentCell != null && GO.IsTakeable() && CurrentCell.PathDistanceTo(GO.CurrentCell.location) <= searchRadius && scorerPredicate(GO) > maxScore).OrderByDescending(scorerPredicate).ToList();
 			if (equipCandidates.Count() <= 0)
 			{
 				ParentBrain.DoReequip = true;
+				FailToParent();
 				return;
 			}
-			ParentBrain.PushGoal(new EquipObject(equipCandidates.First()));
+			ParentBrain.PushGoal(new EquipObject(equipCandidates.First())); // if we don't get it, don't search again.
 		}
 	}
 }
