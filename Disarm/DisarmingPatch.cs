@@ -103,14 +103,3 @@ namespace LiveAndThink.Disarm
 		}
 	}
 }
-
-// Temporary patch to Brain.Think to print all thoughts.
-[HarmonyPatch]
-public static class BrainPatch
-{
-	[HarmonyPatch(typeof(Brain), nameof(Brain.Think))]
-	static void Postfix(Brain __instance, string Hrm)
-	{
-		UnityEngine.Debug.Log($"{__instance.ParentObject.T()} thinks, '{Hrm}'");
-	}
-}
