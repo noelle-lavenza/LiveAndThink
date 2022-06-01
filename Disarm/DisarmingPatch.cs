@@ -8,6 +8,7 @@ using XRL.World.Capabilities;
 using HarmonyLib;
 using XRL.World.Parts;
 using XRL.World.Parts.Mutation;
+using XRL.UI;
 
 namespace LiveAndThink.Disarm
 {
@@ -25,7 +26,18 @@ namespace LiveAndThink.Disarm
 			{
 				return;
 			}
-			Object.pBrain.PushGoal(new ReequipOrFindNew(__result));
+			if(Options.GetOption("OptionDisarmReequip") != "Yes")
+			{
+				return;
+			}
+			if (Options.GetOption("OptionReequipSearch") == "Yes")
+			{
+				Object.pBrain.PushGoal(new ReequipOrFindNew(__result));
+			}
+			else
+			{
+				Object.pBrain.PushGoal(new EquipObject(__result));
+			}
 		}
 	}
 	/// <summary>
@@ -37,7 +49,21 @@ namespace LiveAndThink.Disarm
 	{
 		static void ReequipHelper(GameObject who, GameObject what)
 		{
-			if (who?.pBrain != null && what != null) who.pBrain.PushGoal(new ReequipOrFindNew(what));
+			if(Options.GetOption("OptionPulseReequip") != "Yes")
+			{
+				return;
+			}
+			if (who?.pBrain != null && what != null)
+			{
+				if (Options.GetOption("OptionReequipSearch") == "Yes")
+				{
+					who.pBrain.PushGoal(new ReequipOrFindNew(what));
+				}
+				else
+				{
+					who.pBrain.PushGoal(new EquipObject(what));
+				}
+			}
 		}
 
 		[HarmonyPatch(typeof(MagneticPulse), nameof(MagneticPulse.EmitMagneticPulse))]
