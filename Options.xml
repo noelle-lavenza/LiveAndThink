@@ -6,4 +6,6 @@
   <option ID="OptionPulseReequip" DisplayText="Re-Equip After Magnetic Pulse" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionReequipSearch" DisplayText="Search After Failed Re-Equip" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionLowTonicPriority" DisplayText="Lower Non-Healing Tonic Priority" Category="Live and Think" Type="Checkbox" Default="Yes" />
+  <!-- UNFINISHED -->
+  <!-- <option ID="OptionMetaMelee" DisplayText="Don't Chase Into Melee Range" Category="Live and Think" Type="Checkbox" Default="Yes" /> -->
 </options>
