@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <options>
   <option ID="OptionSafeGrenades" DisplayText="Safe Grenade Throwing" Category="Live and Think" Type="Checkbox" Default="Yes" />
+  <option ID="OptionSafeMissiles" DisplayText="Safe Missile Weapons" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionSafeQuills" DisplayText="Safe Quill Use" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionDisarmReequip" DisplayText="Re-Equip After Disarm" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionPulseReequip" DisplayText="Re-Equip After Magnetic Pulse" Category="Live and Think" Type="Checkbox" Default="Yes" />

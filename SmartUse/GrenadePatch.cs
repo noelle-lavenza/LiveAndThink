@@ -35,7 +35,7 @@ namespace LiveAndThink.SmartUse
 		/// <summary>
 		/// Return the danger radius of an IGrenade part.
 		/// </summary>
-		static int GetDangerRadius(IGrenade grenade)
+		public static int GetDangerRadius(IGrenade grenade)
 		{
 			MethodInfo dangerRadiusMethod = getDangerRadiusMethod(grenade);
 			if (dangerRadiusMethod == null)
@@ -45,7 +45,7 @@ namespace LiveAndThink.SmartUse
 			return (int)dangerRadiusMethod.Invoke(null, new object[1] {grenade});
 		}
 
-		static bool CanEndangerAlly(IGrenade grenade, GameObject target)
+		public static bool CanEndangerAlly(IGrenade grenade, GameObject target)
 		{
 			MethodInfo canEndangerAllyMethod = getCanEndangerAllyMethod(grenade);
 			if (canEndangerAllyMethod == null)
