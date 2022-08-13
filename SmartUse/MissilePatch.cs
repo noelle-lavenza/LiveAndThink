@@ -72,7 +72,7 @@ namespace LiveAndThink.SmartUse
 			{
 				return true;
 			}
-			if (!missileWeapon?.IsValid() ?? false)
+			if (missileWeapon == null || !missileWeapon.IsValid())
 			{
 				return true;
 			}
@@ -150,6 +150,22 @@ namespace LiveAndThink.SmartUse
 				CodeInstruction.Call(typeof(MissilePatch), nameof(MissileSafetyCheck)),
 				leaveInstruction});
 			return codes;
+		}
+
+		/// <summary>
+		/// Modify MagazineAmmoLoader.HandleEvent(GetMissileWeaponProjectileEvent E) to work with bows and launchers
+		/// by setting E.Projectile to Ammo.GetProjectileObjectEvent.GetFor(Ammo, ParentObject) if Ammo is valid/non-null.
+		/// </summary>
+		[HarmonyPatch(typeof(MagazineAmmoLoader), nameof(MagazineAmmoLoader.HandleEvent), new Type[] { typeof(GetMissileWeaponProjectileEvent) })]
+		static bool Prefix(MagazineAmmoLoader __instance, GetMissileWeaponProjectileEvent E, ref bool __result)
+		{
+			if (__instance.Ammo != null && __instance.Ammo.IsValid())
+			{
+				E.Projectile = GetProjectileObjectEvent.GetFor(__instance.Ammo, __instance.ParentObject);
+				__result = false;
+				return false;
+			}
+			return true;
 		}
 	}
 }
