@@ -10,6 +10,7 @@ using XRL.World.AI.GoalHandlers;
 using System.Reflection.Emit;
 using LiveAndThink.Logic;
 using ConsoleLib.Console;
+using XRL.UI;
 
 namespace LiveAndThink.SmartUse
 {
@@ -69,17 +70,17 @@ namespace LiveAndThink.SmartUse
 		{
 			Cell currentCell = firingObject.CurrentCell;
 			Cell targetCell = targetObject.CurrentCell;
-			// Use a simple straight line check if int < 12.
+			// Use a simple straight line check if int < 12 or if the feature is off.
+			if (Options.GetOption("OptionFiringCone", "No") != "Yes" || firingObject.Stat("Intelligence") < 12) // below 12 int or with it off, we just check for a clear line of sight
+			{
+				return Zone.Line(currentCell.X, currentCell.Y, targetCell.X, targetCell.Y);
+			}
 			// Variance compensation if int >=18, tactics skill, weapon skill, or Artillery role
 			// Not handled here: Careful aiming (cares about neutral bystanders) if not aggressive/hostile
 			string combatRole = targetObject.GetTagOrStringProperty("Role", "Minion");
 			MissileWeapon missileWeapon = missileWeaponObject.GetPart<MissileWeapon>();
 			bool isSkilled = missileWeapon.IsSkilled(firingObject);
 			bool doVarianceCompensation = firingObject.Stat("Intelligence") >= 18 || firingObject.HasSkill("Tactics") || isSkilled || combatRole == "Artillery";
-			if (firingObject.Stat("Intelligence") < 12) // below 12 int, we just check for a clear line of sight
-			{
-				return Zone.Line(currentCell.X, currentCell.Y, targetCell.X, targetCell.Y);
-			}
 			double aimPenalty = -firingObject.StatMod(missileWeapon.Modifier);
 			if (doVarianceCompensation || missileWeaponObject.IsNatural())
 			{
@@ -110,7 +111,7 @@ namespace LiveAndThink.SmartUse
 			List<Location2D> result = new List<Location2D>();
 			GetCone(startLocation, endLocation, currentCell.PathDistanceTo(targetCell) + 1, (int) (aimPenalty * 2), result); // * 2 because it's both sides
 			ScreenBuffer Buffer = ScreenBuffer.GetScrapBuffer1();
-			if (false) // todo: replace with debug option
+			if (Options.GetOption("OptionFiringConeDebug", "No") == "Yes")
 			{
 				while (true)
 				{
