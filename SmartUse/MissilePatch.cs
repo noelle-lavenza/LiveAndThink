@@ -83,6 +83,11 @@ namespace LiveAndThink.SmartUse
 			{
 				projectile = GameObject.createSample(blueprint);
 			}
+			if(!GameObject.validate(projectile) || projectile.IsInGraveyard())
+			{
+				UnityEngine.Debug.Log($"Missile weapon {missileWeapon.DebugName} has no projectile!");
+				return true;
+			}
 			int dangerRadius = GetDangerRadius(projectile);
 			UnityEngine.Debug.Log($"Missile dangerRadius for {projectile.DebugName} is {dangerRadius}");
 			if (dangerRadius == 0)
