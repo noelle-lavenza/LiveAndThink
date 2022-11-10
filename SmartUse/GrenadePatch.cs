@@ -185,7 +185,7 @@ namespace LiveAndThink.SmartUse
 		/// </summary>
 		static int GetDangerRadius(PhaseGrenade grenade)
 		{
-			return XRL.Rules.Stat.RollMax(grenade.Radius);
+			return XRL.Rules.Stat.RollMax(grenade.Radius.ToString());
 		}
 
 		/// <summary>
