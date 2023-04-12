@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <options>
-  <option ID="OptionFiringCone" DisplayText="Use Firing Cone For Ranged Weapons" Category="Live and Think" Type="Checkbox" Default="Yes" />
+  <option ID="OptionFiringCone" DisplayText="Use Firing Cone For Ranged Weapons" Category="Live and Think" Type="Checkbox" Default="No" />
   <option ID="OptionSafeGrenades" DisplayText="Safe Grenade Throwing" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionSafeMissiles" DisplayText="Safe Missile Weapons" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionSafeQuills" DisplayText="Safe Quill Use" Category="Live and Think" Type="Checkbox" Default="Yes" />
