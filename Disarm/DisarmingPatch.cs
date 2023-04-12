@@ -30,6 +30,10 @@ namespace LiveAndThink.Disarm
 			{
 				return;
 			}
+			if(Object.IsPlayer())
+			{
+				return;
+			}
 			if (Options.GetOption("OptionReequipSearch") == "Yes")
 			{
 				Object.pBrain.PushGoal(new ReequipOrFindNew(__result));
@@ -50,6 +54,10 @@ namespace LiveAndThink.Disarm
 		static void ReequipHelper(GameObject who, GameObject what)
 		{
 			if(Options.GetOption("OptionPulseReequip") != "Yes")
+			{
+				return;
+			}
+			if(who.IsPlayer())
 			{
 				return;
 			}
