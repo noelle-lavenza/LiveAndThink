@@ -9,6 +9,7 @@ using XRL.World.AI.GoalHandlers;
 using XRL.World.AI;
 using System.Linq;
 using XRL.UI;
+using LiveAndThink.Logic;
 
 /// <summary>
 /// A collection of Harmony patches that make creatures
@@ -102,7 +103,7 @@ namespace LiveAndThink.SmartUse
 			{
 				UnityEngine.Debug.Log($"Thrower {shooterBrain.ParentObject.DebugName} is {shooterBrain.GetOpinion(bystander)} to {bystander.DebugName}");
 				UnityEngine.Debug.Log($"Bystander {bystander.DebugName} {(CanEndangerAlly(projectile, bystander) ? "can" : "cannot")} be damaged by {projectile.GetType().Name}");
-				if (!shooterBrain.IsHostileTowards(bystander) && CanEndangerAlly(projectile, bystander))
+				if (shooterBrain.IsBystander(bystander, includeSelf: true) && CanEndangerAlly(projectile, bystander))
 				{
 					return false;
 				}
