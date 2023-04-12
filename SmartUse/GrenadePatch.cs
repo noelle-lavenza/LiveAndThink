@@ -274,19 +274,19 @@ namespace LiveAndThink.SmartUse
 			var codes = new List<CodeInstruction>(instructions);
 			int startidx = -1;
 			int retidx = -1;
-			LocalBuilder local5 = null;
-			LocalBuilder local7 = null;
+			LocalBuilder local6 = null;
+			LocalBuilder local8 = null;
 			for (int i=0; i<codes.Count; i++)
 			{
-				if (local5 == null && codes[i].opcode == OpCodes.Ldloc_S && ((LocalBuilder)codes[i].operand).LocalIndex == (byte) 5)
+				if (local6 == null && codes[i].opcode == OpCodes.Ldloc_S && ((LocalBuilder)codes[i].operand).LocalIndex == (byte) 6)
 				{
-					local5 = (LocalBuilder)codes[i].operand;
+					local6 = (LocalBuilder)codes[i].operand;
 					continue;
 				}
-				if (retidx == -1 && codes[i].opcode == OpCodes.Stloc_S && ((LocalBuilder) codes[i].operand).LocalIndex == (byte) 7)
+				if (retidx == -1 && codes[i].opcode == OpCodes.Stloc_S && ((LocalBuilder) codes[i].operand).LocalIndex == (byte) 8)
 				{
 					retidx = i+1;
-					local7 = codes[i].operand as LocalBuilder;
+					local8 = codes[i].operand as LocalBuilder;
 					continue;
 				}
 				if (codes[i].Is(OpCodes.Ldstr, "I'm going to throw my "))
@@ -299,19 +299,19 @@ namespace LiveAndThink.SmartUse
 			CodeInstruction leaveInstruction = codes[retidx].Clone();
 			codes[startidx].labels.Add(safeLabel); // add a label to the instruction after our check
 			codes.InsertRange(startidx, new CodeInstruction[] {
-				// ldloc.s    local5
-				new CodeInstruction(OpCodes.Ldloc_S, local5),
+				// ldloc.s    local6
+				new CodeInstruction(OpCodes.Ldloc_S, local6),
 				// ldarg.0
 				// ldfld      class XRL.Game.Brain XRL.Game.AI.GoalHandler::ParentBrain
 				new CodeInstruction(OpCodes.Ldarg_0),
 				CodeInstruction.LoadField(typeof(GoalHandler), nameof(GoalHandler.ParentBrain)),
 				// ldloc.2
-				new CodeInstruction(OpCodes.Ldloc_2),
+				new CodeInstruction(OpCodes.Ldloc_3),
 				// call       GrenadePatch::GrenadeSafetyCheck(GameObject, Brain, Cell)
 				CodeInstruction.Call(typeof(GrenadePatch), nameof(GrenadeSafetyCheck)),
 				new CodeInstruction(OpCodes.Brtrue, safeLabel),
 				new CodeInstruction(OpCodes.Ldc_I4_0),
-				new CodeInstruction(OpCodes.Stloc_S, local7),
+				new CodeInstruction(OpCodes.Stloc_S, local8),
 				leaveInstruction});
 			return codes;
 		}

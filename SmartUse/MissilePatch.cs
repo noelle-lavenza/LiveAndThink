@@ -139,9 +139,10 @@ namespace LiveAndThink.SmartUse
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
 		{
 			var codes = new List<CodeInstruction>(instructions);
-			LocalBuilder local9 = (LocalBuilder) codes.Find(x => x.opcode == OpCodes.Ldloc_S && ((LocalBuilder)x.operand).LocalIndex == (byte) 9).operand;
+			CodeInstruction ld10 = codes.Find(x => x.opcode == OpCodes.Ldloc_S && ((LocalBuilder)x.operand).LocalIndex == (byte) 10);
+			LocalBuilder local10 = (LocalBuilder) ld10.operand;
 			int bridx = -1;
-			for (int i=codes.FindIndex(x => x.Is(OpCodes.Ldstr, "AIWantUseWeapon")); i<codes.Count; i++)
+			for (int i=codes.IndexOf(ld10); i<codes.Count; i++)
 			{
 				if (codes[i].opcode == OpCodes.Brfalse)
 				{
@@ -155,14 +156,14 @@ namespace LiveAndThink.SmartUse
 			}
 			CodeInstruction leaveInstruction = codes[bridx].Clone();
 			codes.InsertRange(bridx+1, new CodeInstruction[] {
-				// ldloc.s    local9
-				new CodeInstruction(OpCodes.Ldloc_S, local9),
+				// ldloc.s    local10
+				new CodeInstruction(OpCodes.Ldloc_S, local10),
 				// ldarg.0
 				// ldfld      class XRL.Game.Brain XRL.Game.AI.GoalHandler::ParentBrain
 				new CodeInstruction(OpCodes.Ldarg_0),
 				CodeInstruction.LoadField(typeof(GoalHandler), nameof(GoalHandler.ParentBrain)),
-				// ldloc.2
-				new CodeInstruction(OpCodes.Ldloc_2),
+				// ldloc.3
+				new CodeInstruction(OpCodes.Ldloc_3),
 				// call       MissilePatch::MissileSafetyCheck(GameObject, Brain, Cell)
 				CodeInstruction.Call(typeof(MissilePatch), nameof(MissileSafetyCheck)),
 				leaveInstruction});

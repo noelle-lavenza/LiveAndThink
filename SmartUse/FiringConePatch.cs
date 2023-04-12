@@ -34,7 +34,7 @@ namespace LiveAndThink.SmartUse
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
 		{
 			var codes = new List<CodeInstruction>(instructions);
-			LocalBuilder local9 = (LocalBuilder) codes.Find(x => x.opcode == OpCodes.Ldloc_S && ((LocalBuilder)x.operand).LocalIndex == (byte) 9).operand;
+			LocalBuilder local10 = (LocalBuilder) codes.Find(x => x.opcode == OpCodes.Ldloc_S && ((LocalBuilder)x.operand).LocalIndex == (byte) 10).operand;
 			int callidx = codes.FindIndex(x => x.Calls(AccessTools.Method(typeof(Zone), "Line")));
 			int startidx = callidx - 8;
 			if (callidx == -1)
@@ -43,16 +43,15 @@ namespace LiveAndThink.SmartUse
 			}
 			codes[callidx] = CodeInstruction.Call(typeof(FiringConePatch), nameof(GetFiringCone));
 			// ldarg.0; call get ParentObject
-			// ldarg.0; call get Target
-			// ldloc.s 9
+			// ldloc.0;
+			// ldloc.s 10
 			// List<Label> labels = new List<Label>(codes[startidx].labels); // there aren't actually any labels there
 			codes.RemoveRange(startidx, 8);
 			codes.InsertRange(startidx, new List<CodeInstruction> {
 				new CodeInstruction(OpCodes.Ldarg_0),
 				new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Kill), nameof(Kill.ParentObject))),
-				new CodeInstruction(OpCodes.Ldarg_0),
-				new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Kill), nameof(Kill.Target))),
-				new CodeInstruction(OpCodes.Ldloc_S, local9)
+				new CodeInstruction(OpCodes.Ldloc_0),
+				new CodeInstruction(OpCodes.Ldloc_S, local10)
 			});
 			// codes[startidx].labels = labels;
 			// now we replace IsHostileTowards.
@@ -63,6 +62,7 @@ namespace LiveAndThink.SmartUse
 			}
 			codes[hostileidx].operand = AccessTools.Method(typeof(Bystander), nameof(Bystander.IsBystander));
 			codes[hostileidx+1].opcode = OpCodes.Brfalse_S;
+			codes.Insert(hostileidx, new CodeInstruction(OpCodes.Ldc_I4_0)); // don't include self
 			return codes;
 		}
 
@@ -100,10 +100,10 @@ namespace LiveAndThink.SmartUse
 			{
 				const double varianceStdDev = 4.72; // bad hardcoded numbers based on the |2d20-21| variance calculation
 				const double varianceMean = 6.65; // ditto
-				UnityEngine.Debug.Log($"Variance compensation for {firingObject.DebugName}: {(int)(2*(varianceMean + varianceStdDev))}");
+				// UnityEngine.Debug.Log($"Variance compensation for {firingObject.DebugName}: {(int)(2*(varianceMean + varianceStdDev))}");
 				aimPenalty += varianceMean + varianceStdDev; // in case we wanna up it to two standard deviations later
 			}
-			UnityEngine.Debug.Log($"Aim penalty for {firingObject.DebugName}: {aimPenalty}");
+			// UnityEngine.Debug.Log($"Aim penalty for {firingObject.DebugName}: {aimPenalty}");
 			if(aimPenalty == 0) // Cone doesn't currently work properly with an angle of 0.
 			{
 				return Zone.Line(currentCell.X, currentCell.Y, targetCell.X, targetCell.Y);
@@ -111,6 +111,7 @@ namespace LiveAndThink.SmartUse
 			Location2D startLocation = currentCell.location;
 			Location2D endLocation = targetCell.location;
 			List<Location2D> result = new List<Location2D>();
+			// UnityEngine.Debug.Log($"Firing distance for {firingObject.DebugName}: {currentCell.PathDistanceTo(targetCell) + 1}");
 			GetCone(startLocation, endLocation, currentCell.PathDistanceTo(targetCell) + 1, (int) (aimPenalty * 2), result); // * 2 because it's both sides
 			ScreenBuffer Buffer = ScreenBuffer.GetScrapBuffer1();
 			if (Options.GetOption("OptionFiringConeDebug", "No") == "Yes" && firingObject.InActiveZone())
