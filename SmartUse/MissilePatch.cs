@@ -79,10 +79,26 @@ namespace LiveAndThink.SmartUse
 			}
 			GameObject projectile = null;
 			string blueprint = null;
-			GetMissileWeaponProjectileEvent.GetFor(missileWeapon, ref projectile, ref blueprint);
+			// We need a special exception here to handle stuff like bows and launchers
+			// that use existing objects as projectiles instead of just summoning them from a blueprint.
+			MagazineAmmoLoader magazineAmmoLoader = missileWeapon.GetPart<MagazineAmmoLoader>();
+			if (magazineAmmoLoader != null)
+			{
+				projectile = GetProjectileObjectEvent.GetFor(magazineAmmoLoader.Ammo, missileWeapon);
+				if (projectile != null && projectile.IsInvalid())
+				{
+					projectile = null; // try again
+				}
+			}
+			// If we still don't have a projectile, try the normal event
 			if (projectile == null)
 			{
-				projectile = GameObject.createSample(blueprint);
+				GetMissileWeaponProjectileEvent.GetFor(missileWeapon, ref projectile, ref blueprint);
+				// If we don't have one after that, create a sample object from the ammo blueprint
+				if (projectile == null && blueprint != null)
+				{
+					projectile = GameObject.createSample(blueprint);
+				}
 			}
 			if(!GameObject.validate(projectile) || projectile.IsInGraveyard())
 			{
@@ -151,22 +167,6 @@ namespace LiveAndThink.SmartUse
 				CodeInstruction.Call(typeof(MissilePatch), nameof(MissileSafetyCheck)),
 				leaveInstruction});
 			return codes;
-		}
-
-		/// <summary>
-		/// Modify MagazineAmmoLoader.HandleEvent(GetMissileWeaponProjectileEvent E) to work with bows and launchers
-		/// by setting E.Projectile to Ammo.GetProjectileObjectEvent.GetFor(Ammo, ParentObject) if Ammo is valid/non-null.
-		/// </summary>
-		[HarmonyPatch(typeof(MagazineAmmoLoader), nameof(MagazineAmmoLoader.HandleEvent), new Type[] { typeof(GetMissileWeaponProjectileEvent) })]
-		static bool Prefix(MagazineAmmoLoader __instance, GetMissileWeaponProjectileEvent E, ref bool __result)
-		{
-			if (__instance.Ammo != null && __instance.Ammo.IsValid())
-			{
-				E.Projectile = GetProjectileObjectEvent.GetFor(__instance.Ammo, __instance.ParentObject);
-				__result = false;
-				return false;
-			}
-			return true;
 		}
 	}
 }
