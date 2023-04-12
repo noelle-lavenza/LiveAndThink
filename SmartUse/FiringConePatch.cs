@@ -82,11 +82,9 @@ namespace LiveAndThink.SmartUse
 			bool isSkilled = missileWeapon.IsSkilled(firingObject);
 			bool doVarianceCompensation = firingObject.Stat("Intelligence") >= 18 || firingObject.HasSkill("Tactics") || isSkilled || combatRole == "Artillery";
 			double aimPenalty = -firingObject.StatMod(missileWeapon.Modifier);
-			if (doVarianceCompensation || missileWeaponObject.IsNatural())
-			{
-				aimPenalty += missileWeapon.WeaponAccuracy; // we're familiar enough with it to account for its inherent inaccuracy
-				aimPenalty -= missileWeaponObject.GetIntProperty("MissileWeaponAccuracyBonus"); // and its inherent accuracy
-			}
+			double unskilledPenalty = (doVarianceCompensation || missileWeaponObject.IsNatural()) ? 1 : 3; // if you aren't familiar with it you underestimate it
+			aimPenalty += ((double) missileWeapon.WeaponAccuracy / unskilledPenalty); // account for its inherent inaccuracy
+			aimPenalty -= ((double) missileWeaponObject.GetIntProperty("MissileWeaponAccuracyBonus") / unskilledPenalty); // and its inherent accuracy
 			if (isSkilled)
 			{
 				aimPenalty -= 2;
@@ -106,12 +104,16 @@ namespace LiveAndThink.SmartUse
 				aimPenalty += varianceMean + varianceStdDev; // in case we wanna up it to two standard deviations later
 			}
 			UnityEngine.Debug.Log($"Aim penalty for {firingObject.DebugName}: {aimPenalty}");
+			if(aimPenalty == 0) // Cone doesn't currently work properly with an angle of 0.
+			{
+				return Zone.Line(currentCell.X, currentCell.Y, targetCell.X, targetCell.Y);
+			}
 			Location2D startLocation = currentCell.location;
 			Location2D endLocation = targetCell.location;
 			List<Location2D> result = new List<Location2D>();
 			GetCone(startLocation, endLocation, currentCell.PathDistanceTo(targetCell) + 1, (int) (aimPenalty * 2), result); // * 2 because it's both sides
 			ScreenBuffer Buffer = ScreenBuffer.GetScrapBuffer1();
-			if (Options.GetOption("OptionFiringConeDebug", "No") == "Yes")
+			if (Options.GetOption("OptionFiringConeDebug", "No") == "Yes" && firingObject.InActiveZone())
 			{
 				while (true)
 				{
@@ -120,10 +122,7 @@ namespace LiveAndThink.SmartUse
 					{
 						Buffer.Goto(result[l].x, result[l].y);
 						Cell cell3 = currentCell.ParentZone.GetCell(result[l]);
-						if (l < result.Count - 1)
-						{
-							Buffer.Write("&CX");
-						}
+						Buffer.Write("&CX");
 					}
 					Buffer.Draw();
 					if (Keyboard.kbhit())
