@@ -7,7 +7,6 @@
   <option ID="OptionDisarmReequip" DisplayText="Re-Equip After Disarm" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionPulseReequip" DisplayText="Re-Equip After Magnetic Pulse" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionReequipSearch" DisplayText="Search After Failed Re-Equip" Category="Live and Think" Type="Checkbox" Default="Yes" />
-  <option ID="OptionLowTonicPriority" DisplayText="Lower Non-Healing Tonic Priority" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionPassBy" DisplayText="Attack Hostiles Blocking Target" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionFiringConeDebug" DisplayText="Draw Live and Think Firing Cones" Category="Debug" Type="Checkbox" Default="No" />
   <!-- UNFINISHED -->
