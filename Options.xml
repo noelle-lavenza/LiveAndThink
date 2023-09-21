@@ -3,7 +3,6 @@
   <option ID="OptionFiringCone" DisplayText="Use Firing Cone For Ranged Weapons" Category="Live and Think" Type="Checkbox" Default="No" />
   <option ID="OptionSafeGrenades" DisplayText="Safe Grenade Throwing" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionSafeMissiles" DisplayText="Safe Missile Weapons" Category="Live and Think" Type="Checkbox" Default="Yes" />
-  <option ID="OptionSafeQuills" DisplayText="Safe Quill Use" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionDisarmReequip" DisplayText="Re-Equip After Disarm" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionPulseReequip" DisplayText="Re-Equip After Magnetic Pulse" Category="Live and Think" Type="Checkbox" Default="Yes" />
   <option ID="OptionReequipSearch" DisplayText="Search After Failed Re-Equip" Category="Live and Think" Type="Checkbox" Default="Yes" />
