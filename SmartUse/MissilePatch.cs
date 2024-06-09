@@ -9,7 +9,6 @@ using XRL.World.AI.GoalHandlers;
 using XRL.World.AI;
 using System.Linq;
 using XRL.UI;
-using LiveAndThink.Logic;
 
 /// <summary>
 /// A collection of Harmony patches that make creatures
@@ -79,28 +78,12 @@ namespace LiveAndThink.SmartUse
 			}
 			GameObject projectile = null;
 			string blueprint = null;
-			// We need a special exception here to handle stuff like bows and launchers
-			// that use existing objects as projectiles instead of just summoning them from a blueprint.
-			MagazineAmmoLoader magazineAmmoLoader = missileWeapon.GetPart<MagazineAmmoLoader>();
-			if (magazineAmmoLoader != null)
-			{
-				projectile = GetProjectileObjectEvent.GetFor(magazineAmmoLoader.Ammo, missileWeapon);
-				if (projectile != null && projectile.IsInvalid())
-				{
-					projectile = null; // try again
-				}
-			}
-			// If we still don't have a projectile, try the normal event
+			GetMissileWeaponProjectileEvent.GetFor(missileWeapon, ref projectile, ref blueprint);
 			if (projectile == null)
 			{
-				GetMissileWeaponProjectileEvent.GetFor(missileWeapon, ref projectile, ref blueprint);
-				// If we don't have one after that, create a sample object from the ammo blueprint
-				if (projectile == null && blueprint != null)
-				{
-					projectile = GameObject.createSample(blueprint);
-				}
+				projectile = GameObject.CreateSample(blueprint);
 			}
-			if(!GameObject.validate(projectile) || projectile.IsInGraveyard())
+			if(!GameObject.Validate(projectile) || projectile.IsInGraveyard())
 			{
 				UnityEngine.Debug.Log($"Missile weapon {missileWeapon.DebugName} has no projectile!");
 				return true;
@@ -117,9 +100,9 @@ namespace LiveAndThink.SmartUse
 			List<GameObject> bystanders = targetCell.FastFloodVisibility("Combat", dangerRadius);
 			foreach (GameObject bystander in bystanders)
 			{
-				UnityEngine.Debug.Log($"Thrower {shooterBrain.ParentObject.DebugName} is {shooterBrain.GetOpinion(bystander)} to {bystander.DebugName}");
+				UnityEngine.Debug.Log($"Thrower {shooterBrain.ParentObject.DebugName} is {shooterBrain.GetFeelingLevel(bystander)} to {bystander.DebugName}");
 				UnityEngine.Debug.Log($"Bystander {bystander.DebugName} {(CanEndangerAlly(projectile, bystander) ? "can" : "cannot")} be damaged by {projectile.GetType().Name}");
-				if (shooterBrain.IsBystander(bystander, includeSelf: true) && CanEndangerAlly(projectile, bystander))
+				if (!shooterBrain.IsHostileTowards(bystander) && CanEndangerAlly(projectile, bystander))
 				{
 					return false;
 				}
@@ -139,10 +122,9 @@ namespace LiveAndThink.SmartUse
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
 		{
 			var codes = new List<CodeInstruction>(instructions);
-			CodeInstruction ld10 = codes.Find(x => x.opcode == OpCodes.Ldloc_S && ((LocalBuilder)x.operand).LocalIndex == (byte) 10);
-			LocalBuilder local10 = (LocalBuilder) ld10.operand;
+			LocalBuilder local9 = (LocalBuilder) codes.Find(x => x.opcode == OpCodes.Ldloc_S && ((LocalBuilder)x.operand).LocalIndex == (byte) 9).operand;
 			int bridx = -1;
-			for (int i=codes.IndexOf(ld10); i<codes.Count; i++)
+			for (int i=codes.FindIndex(x => x.Is(OpCodes.Ldstr, "AIWantUseWeapon")); i<codes.Count; i++)
 			{
 				if (codes[i].opcode == OpCodes.Brfalse)
 				{
@@ -156,18 +138,34 @@ namespace LiveAndThink.SmartUse
 			}
 			CodeInstruction leaveInstruction = codes[bridx].Clone();
 			codes.InsertRange(bridx+1, new CodeInstruction[] {
-				// ldloc.s    local10
-				new CodeInstruction(OpCodes.Ldloc_S, local10),
+				// ldloc.s    local9
+				new CodeInstruction(OpCodes.Ldloc_S, local9),
 				// ldarg.0
 				// ldfld      class XRL.Game.Brain XRL.Game.AI.GoalHandler::ParentBrain
 				new CodeInstruction(OpCodes.Ldarg_0),
 				CodeInstruction.LoadField(typeof(GoalHandler), nameof(GoalHandler.ParentBrain)),
-				// ldloc.3
-				new CodeInstruction(OpCodes.Ldloc_3),
+				// ldloc.2
+				new CodeInstruction(OpCodes.Ldloc_2),
 				// call       MissilePatch::MissileSafetyCheck(GameObject, Brain, Cell)
 				CodeInstruction.Call(typeof(MissilePatch), nameof(MissileSafetyCheck)),
 				leaveInstruction});
 			return codes;
+		}
+
+		/// <summary>
+		/// Modify MagazineAmmoLoader.HandleEvent(GetMissileWeaponProjectileEvent E) to work with bows and launchers
+		/// by setting E.Projectile to Ammo.GetProjectileObjectEvent.GetFor(Ammo, ParentObject) if Ammo is valid/non-null.
+		/// </summary>
+		[HarmonyPatch(typeof(MagazineAmmoLoader), nameof(MagazineAmmoLoader.HandleEvent), new Type[] { typeof(GetMissileWeaponProjectileEvent) })]
+		static bool Prefix(MagazineAmmoLoader __instance, GetMissileWeaponProjectileEvent E, ref bool __result)
+		{
+			if (__instance.Ammo != null && __instance.Ammo.IsValid())
+			{
+				E.Projectile = GetProjectileObjectEvent.GetFor(__instance.Ammo, __instance.ParentObject);
+				__result = false;
+				return false;
+			}
+			return true;
 		}
 	}
 }
