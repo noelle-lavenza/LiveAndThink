@@ -5,7 +5,6 @@ using XRL.World;
 using HarmonyLib;
 using XRL.World.Parts.Mutation;
 using XRL.UI;
-using LiveAndThink.Logic;
 
 /// <summary>
 /// A collection of Harmony patches that make creatures
@@ -34,7 +33,7 @@ namespace LiveAndThink.SmartUse
 			{
 				foreach (GameObject bystander in cell.GetObjectsWithPartReadonly("Combat"))
 				{
-					if (bystander.HasPart("Combat") && !(bystander.GetPart<XRL.World.Parts.Mutations>()?.HasMutation("Quills") ?? false) && (quills.ParentObject.pBrain?.IsBystander(bystander) ?? false))
+					if (bystander.HasPart("Combat") && !(bystander.GetPart<XRL.World.Parts.Mutations>()?.HasMutation("Quills") ?? false) && !quills.ParentObject.Brain.IsHostileTowards(bystander))
 					{
 						return false;
 					}

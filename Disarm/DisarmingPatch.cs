@@ -22,7 +22,7 @@ namespace LiveAndThink.Disarm
 		[HarmonyPatch(typeof(Disarming), nameof(Disarming.Disarm))]
 		public static void Postfix(GameObject Object, GameObject Disarmer, string DisarmerStat, GameObject DisarmingWeapon, GameObject __result)
 		{
-			if (__result == null || Object.pBrain == null)
+			if (__result == null || Object.Brain == null)
 			{
 				return;
 			}
@@ -30,17 +30,13 @@ namespace LiveAndThink.Disarm
 			{
 				return;
 			}
-			if(Object.IsPlayer())
-			{
-				return;
-			}
 			if (Options.GetOption("OptionReequipSearch") == "Yes")
 			{
-				Object.pBrain.PushGoal(new ReequipOrFindNew(__result));
+				Object.Brain.PushGoal(new ReequipOrFindNew(__result));
 			}
 			else
 			{
-				Object.pBrain.PushGoal(new EquipObject(__result));
+				Object.Brain.PushGoal(new EquipObject(__result));
 			}
 		}
 	}
@@ -57,19 +53,15 @@ namespace LiveAndThink.Disarm
 			{
 				return;
 			}
-			if(who.IsPlayer())
-			{
-				return;
-			}
-			if (who?.pBrain != null && what != null)
+			if (who?.Brain != null && what != null)
 			{
 				if (Options.GetOption("OptionReequipSearch") == "Yes")
 				{
-					who.pBrain.PushGoal(new ReequipOrFindNew(what));
+					who.Brain.PushGoal(new ReequipOrFindNew(what));
 				}
 				else
 				{
-					who.pBrain.PushGoal(new EquipObject(what));
+					who.Brain.PushGoal(new EquipObject(what));
 				}
 			}
 		}

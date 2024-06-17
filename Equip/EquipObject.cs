@@ -35,7 +35,7 @@ namespace LiveAndThink.Disarm
 
 		public override bool Finished()
 		{
-			return GameObject.validate(targetObject) && ParentObject.Contains(targetObject);
+			return GameObject.Validate(targetObject) && ParentObject.Contains(targetObject);
 		}
 
 		private void DoFail()
@@ -54,7 +54,7 @@ namespace LiveAndThink.Disarm
 
 		public override void TakeAction()
 		{
-			if (!GameObject.validate(targetObject))
+			if (!GameObject.Validate(targetObject))
 			{
 				Think($"What I was trying to equip no longer exists!");
 				DoFail();
