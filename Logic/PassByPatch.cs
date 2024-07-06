@@ -33,26 +33,39 @@ namespace LiveAndThink.Logic
 			return true;
 		}
 
+		public static void Mark(this CodeMatcher instance)
+		{
+			
+		}
+
 		[HarmonyPatch(typeof(Step), nameof(Step.TakeAction))]
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
 		{
-			var codes = new List<CodeInstruction>(instructions);
-			var idx = codes.FindLastIndex(x => x.Is(OpCodes.Ldstr, "There's something in my way!"));
-			if (idx != -1)
-			{
-				codes[idx].operand = "There's someone non-hostile in my way!";
-			}
-			idx = codes.FindIndex(x => x.Calls(AccessTools.Method(typeof(Step), "CellHasHostile"))) - 2;
-			if (idx != -1)
-			{
-				Label retLabel = generator.DefineLabel();
-				codes[idx+18].labels.Add(retLabel);
-				codes.Insert(idx, new CodeInstruction(OpCodes.Brtrue_S, retLabel));
-				codes.Insert(idx, CodeInstruction.Call(typeof(PassByPatch), nameof(PassByPatch.AttackBlockerIfPresent)));
-				codes.Insert(idx, new CodeInstruction(OpCodes.Ldloc_0));
-				codes.Insert(idx, new CodeInstruction(OpCodes.Ldarg_0));
-			}
-			return codes;
+			Label return_label = generator.DefineLabel();
+			return new CodeMatcher(instructions)
+				.MatchStartForward(
+					new CodeMatch(OpCodes.Ldarg_0),
+					new CodeMatch(OpCodes.Ldloc_0),
+					new CodeMatch(CodeInstruction.Call(typeof(Step), "CellHasHostile")) // private, must use string instead of nameof()
+				)
+				.ThrowIfInvalid("LiveAndThink.Logic.PassByPatch: Unable to find CellHasHostile injection point!")
+				.Insert(
+					new CodeInstruction(OpCodes.Ldarg_0),
+					new CodeInstruction(OpCodes.Ldloc_0),
+					CodeInstruction.Call(typeof(PassByPatch), nameof(PassByPatch.AttackBlockerIfPresent)),
+					new CodeInstruction(OpCodes.Brtrue_S, return_label)
+				)
+				// find the return so we can avoid FailToParent
+				.MatchStartForward(
+					new CodeMatch(OpCodes.Ret)
+				)
+				.AddLabels(new List<Label> {return_label})
+				.MatchEndForward(
+					new CodeMatch(code => code.LoadsConstant("There's something in my way!"))
+				)
+				.ThrowIfInvalid("LiveAndThink.Logic.PassByPatch: Unable to find Think(\"There's something in my way!\") injection point.")
+				.SetOperandAndAdvance("There's someone non-hostile in my way!")
+				.InstructionEnumeration();
 		}
 	}
 }

@@ -16,23 +16,16 @@ namespace LiveAndThink.Logic
 		[HarmonyPatch(typeof(IComponent<GameObject>), "ConTarget", new Type[] { typeof(GameObject) })]
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
 		{
-			var codes = new List<CodeInstruction>(instructions);
-			var index = codes.FindIndex(x => x.Is(OpCodes.Callvirt, AccessTools.Method(typeof(GameObject), nameof(GameObject.IsPlayer))));
-			if (index != -1)
-			{
-				// Move the label on index - 1 to index + 4.
-				codes[index + 4].labels.AddRange(codes[index - 1].labels);
-				// Remove all code between callvirt IsPlayer - 1 and callvirt IsPlayer + 3.
-				codes.RemoveRange(index - 1, 5);
-			}
-			var tagIndex = codes.FindIndex(x => x.Is(OpCodes.Callvirt, AccessTools.Method(typeof(GameObject), nameof(GameObject.GetTag))));
-			if (tagIndex != -1)
-			{
-				// Replace GetTag with GetPropertyOrTag.
-				codes[tagIndex].operand = AccessTools.Method(typeof(GameObject), nameof(GameObject.GetPropertyOrTag));
-			}
-			// We add a new IsPlayer check in the postfix.
-			return codes;
+			CodeMatcher codeMatcher = new CodeMatcher(instructions)
+				.MatchStartForward(
+					new CodeMatch(code => code.Calls(AccessTools.Method(typeof(GameObject), nameof(GameObject.IsPlayer))))
+				)
+				.Advance(4)
+				.ThrowIfInvalid("LiveAndThink.ConTargetPatch: Could not find IsPlayer injection site!");
+			// Remove the IsPlayer early return.
+			return codeMatcher.AddLabels(codeMatcher.InstructionAt(-5).ExtractLabels())
+				.RemoveInstructionsWithOffsets(-5, -3)
+				.InstructionEnumeration();
 		}
 		/*
 		[HarmonyPatch(typeof(IComponent<GameObject>), "ConTarget", new Type[] { typeof(GameObject) })]

@@ -54,20 +54,19 @@ namespace LiveAndThink.Logic
 		[HarmonyPatch(typeof(Kill), nameof(Kill.TakeAction))]
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
 		{
-			var codes = new List<CodeInstruction>(instructions);
-			var index = codes.FindIndex(x => x.Is(OpCodes.Ldstr, "I'm close enough to my target."));
-			if (index != -1)
-			{
-				index -= 7;
-				codes[index] = CodeInstruction.Call(typeof(MetaMelee), nameof(StopDistance));
-				// Add private field LastAttacked before the call.
-				codes.Insert(index, CodeInstruction.LoadField(typeof(Kill), "LastAttacked"));
-				// Add arg0 before the ldfld.
-				codes.Insert(index, new CodeInstruction(OpCodes.Ldarg_0));
-				// Add arg0 before the call.
-				codes.Insert(index, new CodeInstruction(OpCodes.Ldarg_0));
-			}
-			return codes;
+			return new CodeMatcher(instructions)
+				.MatchStartForward(
+					new CodeMatch(OpCodes.Ldloc_2),
+					new CodeMatch(OpCodes.Ldc_I4_1),
+					new CodeMatch(OpCodes.Bgt_S)
+				).Advance(1)
+				.ThrowIfInvalid("LiveAndThink.MetaMelee: Unable to find num <= 1 injection point.")
+				.InsertAndAdvance(
+					new CodeInstruction(OpCodes.Ldarg_0),
+					new CodeInstruction(OpCodes.Ldarg_0),
+					CodeInstruction.LoadField(typeof(Kill), "LastAttacked"))
+				.SetInstruction(CodeInstruction.Call(typeof(MetaMelee), nameof(StopDistance)))
+				.InstructionEnumeration();
 		}
 	}
 }

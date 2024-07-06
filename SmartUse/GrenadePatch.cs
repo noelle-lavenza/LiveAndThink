@@ -38,7 +38,7 @@ namespace LiveAndThink.SmartUse
 		/// </summary>
 		public static int GetDangerRadius(IGrenade grenade)
 		{
-			MethodInfo dangerRadiusMethod = getDangerRadiusMethod(grenade);
+			MethodInfo dangerRadiusMethod = GetDangerRadiusMethod(grenade);
 			if (dangerRadiusMethod == null)
 			{
 				return 0;
@@ -48,7 +48,7 @@ namespace LiveAndThink.SmartUse
 
 		public static bool CanEndangerAlly(IGrenade grenade, GameObject target)
 		{
-			MethodInfo canEndangerAllyMethod = getCanEndangerAllyMethod(grenade);
+			MethodInfo canEndangerAllyMethod = GetCanEndangerAllyMethod(grenade);
 			if (canEndangerAllyMethod == null)
 			{
 				return true;
@@ -56,11 +56,10 @@ namespace LiveAndThink.SmartUse
 			return (bool)canEndangerAllyMethod.Invoke(null, new object[2] {grenade, target});
 		}
 
-		static MethodInfo getCanEndangerAllyMethod(IGrenade grenade)
+		static MethodInfo GetCanEndangerAllyMethod(IGrenade grenade)
 		{
 			Type type = grenade.GetType();
-			MethodInfo canEndangerAllyMethod;
-			if (!canEndangerAllyLookup.TryGetValue(type, out canEndangerAllyMethod))
+			if (!canEndangerAllyLookup.TryGetValue(type, out MethodInfo canEndangerAllyMethod))
 			{
 				canEndangerAllyParameterList[0] = type;
 				canEndangerAllyMethod = type.GetMethod("CanEndangerAlly", canEndangerAllyParameterList);
@@ -97,21 +96,21 @@ namespace LiveAndThink.SmartUse
 			{
 				return false;
 			}
-			if (gasPart is GasDamaging)
+			if (gasPart is GasDamaging damaging)
 			{
-				return ((GasDamaging)gasPart).Match(target);
+				return damaging.Match(target);
 			}
-			if (gasPart is GasPoison)
+			if (gasPart is GasPoison poison)
 			{
-				return ((GasPoison)gasPart).IsAffectable(target);
+				return poison.IsAffectable(target);
 			}
-			if (gasPart is GasStun)
+			if (gasPart is GasStun stun)
 			{
-				return ((GasStun)gasPart).IsAffectable(target);
+				return stun.IsAffectable(target);
 			}
-			if (gasPart is GasSleep)
+			if (gasPart is GasSleep sleep)
 			{
-				return ((GasSleep)gasPart).IsAffectable(target);
+				return sleep.IsAffectable(target);
 			}
 			if (gasPart is EMPGrenade)
 			{
@@ -211,7 +210,7 @@ namespace LiveAndThink.SmartUse
 		/// Use reflection to return the proper GetDangerRadius override for a given type, if it exists.
 		/// Ignore the base IGrenade type, though.
 		/// </summary>
-		static MethodInfo getDangerRadiusMethod(IGrenade grenade)
+		static MethodInfo GetDangerRadiusMethod(IGrenade grenade)
 		{
 			if (!dangerRadiusLookup.TryGetValue(grenade.GetType(), out MethodInfo dangerMethod))
 			{
@@ -274,19 +273,19 @@ namespace LiveAndThink.SmartUse
 			var codes = new List<CodeInstruction>(instructions);
 			int startidx = -1;
 			int retidx = -1;
-			LocalBuilder local6 = null;
-			LocalBuilder local8 = null;
+			LocalBuilder weaponVar = null;
+			LocalBuilder returnVar = null;
 			for (int i=0; i<codes.Count; i++)
 			{
-				if (local6 == null && codes[i].opcode == OpCodes.Ldloc_S && ((LocalBuilder)codes[i].operand).LocalIndex == (byte) 6)
+				if (weaponVar == null && codes[i].opcode == OpCodes.Ldloc_S && ((LocalBuilder)codes[i].operand).LocalIndex == (byte) 6)
 				{
-					local6 = (LocalBuilder)codes[i].operand;
+					weaponVar = (LocalBuilder)codes[i].operand;
 					continue;
 				}
-				if (retidx == -1 && codes[i].opcode == OpCodes.Stloc_S && ((LocalBuilder) codes[i].operand).LocalIndex == (byte) 8)
+				if (retidx == -1 && codes[i].opcode == OpCodes.Stloc_S && ((LocalBuilder) codes[i].operand).LocalIndex == (byte) 15)
 				{
 					retidx = i+1;
-					local8 = codes[i].operand as LocalBuilder;
+					returnVar = codes[i].operand as LocalBuilder;
 					continue;
 				}
 				if (codes[i].Is(OpCodes.Ldstr, "I'm going to throw my "))
@@ -299,8 +298,8 @@ namespace LiveAndThink.SmartUse
 			CodeInstruction leaveInstruction = codes[retidx].Clone();
 			codes[startidx].labels.Add(safeLabel); // add a label to the instruction after our check
 			codes.InsertRange(startidx, new CodeInstruction[] {
-				// ldloc.s    local6
-				new CodeInstruction(OpCodes.Ldloc_S, local6),
+				// ldloc.s    weaponVar
+				new CodeInstruction(OpCodes.Ldloc_S, weaponVar),
 				// ldarg.0
 				// ldfld      class XRL.Game.Brain XRL.Game.AI.GoalHandler::ParentBrain
 				new CodeInstruction(OpCodes.Ldarg_0),
@@ -311,7 +310,7 @@ namespace LiveAndThink.SmartUse
 				CodeInstruction.Call(typeof(GrenadePatch), nameof(GrenadeSafetyCheck)),
 				new CodeInstruction(OpCodes.Brtrue, safeLabel),
 				new CodeInstruction(OpCodes.Ldc_I4_0),
-				new CodeInstruction(OpCodes.Stloc_S, local8),
+				new CodeInstruction(OpCodes.Stloc_S, returnVar),
 				leaveInstruction});
 			return codes;
 		}

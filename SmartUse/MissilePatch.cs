@@ -10,6 +10,7 @@ using XRL.World.AI;
 using System.Linq;
 using XRL.UI;
 using LiveAndThink.Logic;
+using System.Diagnostics;
 
 /// <summary>
 /// A collection of Harmony patches that make creatures
@@ -97,10 +98,10 @@ namespace LiveAndThink.SmartUse
 				// If we don't have one after that, create a sample object from the ammo blueprint
 				if (projectile == null && blueprint != null)
 				{
-					projectile = GameObject.createSample(blueprint);
+					projectile = GameObject.CreateSample(blueprint);
 				}
 			}
-			if(!GameObject.validate(projectile) || projectile.IsInGraveyard())
+			if(!GameObject.Validate(projectile) || projectile.IsInGraveyard())
 			{
 				UnityEngine.Debug.Log($"Missile weapon {missileWeapon.DebugName} has no projectile!");
 				return true;
@@ -117,7 +118,7 @@ namespace LiveAndThink.SmartUse
 			List<GameObject> bystanders = targetCell.FastFloodVisibility("Combat", dangerRadius);
 			foreach (GameObject bystander in bystanders)
 			{
-				UnityEngine.Debug.Log($"Thrower {shooterBrain.ParentObject.DebugName} is {shooterBrain.GetOpinion(bystander)} to {bystander.DebugName}");
+				UnityEngine.Debug.Log($"Thrower {shooterBrain.ParentObject.DebugName} is {Enum.GetName(typeof(Brain.FeelingLevel), shooterBrain.GetFeelingLevel(bystander))} to {bystander.DebugName}");
 				UnityEngine.Debug.Log($"Bystander {bystander.DebugName} {(CanEndangerAlly(projectile, bystander) ? "can" : "cannot")} be damaged by {projectile.GetType().Name}");
 				if (shooterBrain.IsBystander(bystander, includeSelf: true) && CanEndangerAlly(projectile, bystander))
 				{
@@ -138,36 +139,25 @@ namespace LiveAndThink.SmartUse
 		[HarmonyPatch(typeof(Kill), nameof(Kill.TryMissileWeapon))]
 		static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
 		{
-			var codes = new List<CodeInstruction>(instructions);
-			CodeInstruction ld10 = codes.Find(x => x.opcode == OpCodes.Ldloc_S && ((LocalBuilder)x.operand).LocalIndex == (byte) 10);
-			LocalBuilder local10 = (LocalBuilder) ld10.operand;
-			int bridx = -1;
-			for (int i=codes.IndexOf(ld10); i<codes.Count; i++)
-			{
-				if (codes[i].opcode == OpCodes.Brfalse)
-				{
-					bridx = i;
-					break;
-				} 
-			}
-			if (bridx == -1)
-			{
-				return instructions; // do nothing
-			}
-			CodeInstruction leaveInstruction = codes[bridx].Clone();
-			codes.InsertRange(bridx+1, new CodeInstruction[] {
-				// ldloc.s    local10
-				new CodeInstruction(OpCodes.Ldloc_S, local10),
-				// ldarg.0
-				// ldfld      class XRL.Game.Brain XRL.Game.AI.GoalHandler::ParentBrain
-				new CodeInstruction(OpCodes.Ldarg_0),
-				CodeInstruction.LoadField(typeof(GoalHandler), nameof(GoalHandler.ParentBrain)),
-				// ldloc.3
-				new CodeInstruction(OpCodes.Ldloc_3),
-				// call       MissilePatch::MissileSafetyCheck(GameObject, Brain, Cell)
-				CodeInstruction.Call(typeof(MissilePatch), nameof(MissileSafetyCheck)),
-				leaveInstruction});
-			return codes;
+			var codeMatcher = new CodeMatcher(instructions)
+				.MatchEndForward(
+					new CodeMatch(OpCodes.Ldloc_S, name: "load gameObject"), // gameObject, our weapon
+					new CodeMatch(OpCodes.Ldarg_0),
+					new CodeMatch(code => code.Calls(AccessTools.DeclaredPropertyGetter(typeof(GoalHandler), nameof(GoalHandler.ParentObject)))),
+					new CodeMatch(OpCodes.Ldloc_0),
+					new CodeMatch(code => code.Calls(AccessTools.DeclaredMethod(typeof(AIWantUseWeaponEvent), nameof(AIWantUseWeaponEvent.Check)))),
+					new CodeMatch(OpCodes.Brfalse, name: "branch")
+				).Advance(1)
+				.ThrowIfInvalid("LiveAndThink.MissilePatch: Unable to find AIWantUseWeaponEvent.Check injection site!");
+			return codeMatcher
+				.Insert(
+					codeMatcher.NamedMatch("load gameObject").Clone(),
+					new CodeInstruction(OpCodes.Ldarg_0), // ParentObject
+					CodeInstruction.LoadField(typeof(GoalHandler), nameof(GoalHandler.ParentBrain)), // parentObject.ParentBrain
+					new CodeInstruction(OpCodes.Ldloc_3), // Cell
+					CodeInstruction.Call(typeof(MissilePatch), nameof(MissileSafetyCheck)),
+					codeMatcher.NamedMatch("branch").Clone()
+				).InstructionEnumeration();
 		}
 	}
 }
